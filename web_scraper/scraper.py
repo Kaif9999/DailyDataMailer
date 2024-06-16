@@ -1,35 +1,42 @@
-import requests
-from bs4 import BeautifulSoup
 import logging
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import time
 
 class WebScraper:
     def __init__(self, url):
         self.url = url
         self.logger = logging.getLogger(__name__)
+        self.options = Options()
+        self.options.headless = True  # Set Chrome to run in headless mode
 
     def fetch_data(self):
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            response = requests.get(self.url, headers=headers)
-            response.raise_for_status()
-            self.logger.info(f"Fetched data from {self.url} with status code {response.status_code}")
-            with open("fetched_content.html", "w", encoding="utf-8") as f:
-                f.write(response.text)
-            return response.text
-        except requests.RequestException as e:
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=self.options)
+            driver.get(self.url)
+            time.sleep(5)  # Allow time for the page to fully load
+            html_content = driver.page_source
+            driver.quit()
+            self.logger.info(f"Fetched data from {self.url}")
+            return html_content
+        except Exception as e:
             self.logger.error(f"Error fetching data from {self.url}: {e}")
             return None
 
     def parse_data(self, html_content):
         try:
+            # Parse HTML content using BeautifulSoup or other parsing libraries
+            # Adjust this based on the actual HTML structure you want to scrape
+            # Example:
             soup = BeautifulSoup(html_content, 'html.parser')
-            headlines = soup.find_all('h2', class_='headline')
+            headlines = soup.find_all('h1', class_='post-title')
             self.logger.info(f"Found {len(headlines)} headlines")
             if not headlines:
                 self.logger.warning("No headlines found.")
-            return [headline.text for headline in headlines]
+            return [headline.text.strip() for headline in headlines]
         except Exception as e:
             self.logger.error(f"Error parsing HTML content: {e}")
             return []
@@ -44,25 +51,22 @@ class WebScraper:
             self.logger.error("Failed to fetch HTML content.")
             return []
 
-# Example main.py to run the scraper
+# Example usage in main.py
+if __name__ == "__main__":
+    import logging
+    from bs4 import BeautifulSoup
 
-import logging
+    # Set up logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger(__name__)
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-def main():
     logger.info("Starting automation suite...")
 
     # Step 1: Scrape News
-    logger.info("Starting web scraping...")
+    logger.info("Starting web scraping with Selenium...")
     scraper = WebScraper('https://www.techguidenaveen.com/2024/04/ignou-re-registration-july-2024-session.html#google_vignette')
     headlines = scraper.scrape()
     if headlines:
         logger.info(f"Scraped {len(headlines)} headlines.")
     else:
         logger.error("Failed to scrape headlines.")
-
-if __name__ == "__main__":
-    main()

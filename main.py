@@ -13,7 +13,7 @@ def main():
 
     # Step 1: Scrape News
     logger.info("Starting web scraping...")
-    scraper = WebScraper('https://www.techguidenaveen.com/2024/04/ignou-re-registration-july-2024-session.html#google_vignette')
+    scraper = WebScraper('https://www.creativebloq.com/web-design/best-blogging-platforms-121413634')
     headlines = scraper.scrape()
     if headlines:
         logger.info(f"Scraped {len(headlines)} headlines.")
